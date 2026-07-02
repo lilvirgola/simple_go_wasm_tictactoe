@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tris WASM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300 p-4">
+    
+    <div class="w-full max-w-md relative">
+        <div class="flex justify-end mb-4">
+            <button id="themeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900" aria-label="Toggle theme">
+                <svg class="w-6 h-6 hidden dark:block text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <svg class="w-6 h-6 block dark:hidden text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
+        </div>
+
+        <h1 class="text-4xl font-bold text-center mb-6">Tris (Go WASM)</h1>
+        
+        <div id="board" class="grid grid-cols-3 gap-[5px] w-fit mx-auto">
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="0" onclick="move(0)"></button>
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="1" onclick="move(1)"></button>
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="2" onclick="move(2)"></button>
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="3" onclick="move(3)"></button>
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="4" onclick="move(4)"></button>
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="5" onclick="move(5)"></button>
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="6" onclick="move(6)"></button>
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="7" onclick="move(7)"></button>
+            <button class="cell w-[80px] h-[80px] text-2xl font-bold flex items-center justify-center bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" id="8" onclick="move(8)"></button>
+        </div>
+
+        <div id="status" class="mt-[10px] text-lg font-bold text-center h-8"></div>
+        <div class="mt-6 flex flex-col items-center gap-4">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="aiToggle" checked onclick="toggleAI()" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                <span>Play against AI (you are X, AI is O)</span>
+            </label>
+            
+            <button onclick="reset()" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded shadow transition-colors">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+
+        const initTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                htmlElement.classList.add('dark');
+            } else {
+                htmlElement.classList.remove('dark');
+            }
+        };
+
+        initTheme();
+
+        themeToggleBtn.addEventListener('click', () => {
+            htmlElement.classList.toggle('dark');
+            const isDark = htmlElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+    </script>
+
+    <script src="wasm_exec.js"></script>
+    <script>
+        const go = new Go();
+        WebAssembly.instantiateStreaming(
+            fetch("main.wasm"),
+            go.importObject
+        ).then((result) => {
+            go.run(result.instance);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+name: Build WASM and Sync to Hugo
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout WASM repo
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Build WASM binary
+        run: |
+          mkdir -p dist
+          GOOS=js GOARCH=wasm go build -o dist/main.wasm cmd/wasm_tictactoe/main.go
+
+      - name: Copy web assets
+        run: |
+          cp web/index.html dist/index.html
+          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm_exec.js
+
+      - name: Checkout Hugo repo
+        uses: actions/checkout@v4
+        with:
+          repository: https://github.com/lilvirgola/my-portfolio
+          token: ${{ secrets.MY_PORTFOLIO_TOKEN }}
+          path: hugo
+
+      - name: Sync WASM into Hugo static folder
+        run: |
+          rm -rf hugo/static/apps/tris
+          mkdir -p hugo/static/apps/tris
+          cp -r dist/* hugo/static/apps/tris/
+
+      - name: Commit and push Hugo update
+        run: |
+          cd hugo
+          git config user.name "ci-bot"
+          git config user.email "ci@bot.local"
+
+          git add static/apps/tris
+
+          git commit -m "update tris wasm from $GITHUB_REF_NAME" || echo "no changes"
+          git push
