@@ -31,7 +31,7 @@ jobs:
       - name: Checkout Hugo repo
         uses: actions/checkout@v4
         with:
-          repository: https://github.com/lilvirgola/my-portfolio
+          repository: lilvirgola/my-portfolio
           token: ${{ secrets.MY_PORTFOLIO_TOKEN }}
           path: hugo
 
