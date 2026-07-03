@@ -1,27 +1,27 @@
-// Package state owns the mutable game session: whose turn it is, whether
-// the AI is enabled, and the win/draw outcome. It orchestrates the pure
-// board package and the ai package but holds all the mutable state itself.
 package state
 
 import (
 	"wasm_tictactoe/internal/ai"
 	"wasm_tictactoe/internal/board"
+	"wasm_tictactoe/internal/global"
 )
 
 // Game is one tic-tac-toe session.
+
 type Game struct {
-	Board       board.Board
-	Turn        string
-	Winner      string // "", "X", "O", or "Draw"
-	AIEnabled   bool
-	HumanPlayer string
-	AIPlayer    string
+	Board        board.Board
+	Turn         string
+	Winner       string
+	AIEnabled    bool
+	HumanPlayer  string
+	AIPlayer     string
+	AIDifficulty global.Difficulty
 }
 
-// New returns a fresh game with the human playing X, AI playing O, and AI
-// assistance enabled by default.
+// New returns a fresh game
 func New() *Game {
 	g := &Game{}
+	g.AIDifficulty = global.MediumDifficulty
 	g.reset()
 	return g
 }
@@ -37,6 +37,11 @@ func (g *Game) reset() {
 // Reset starts a new round, preserving the AIEnabled setting.
 func (g *Game) Reset() {
 	g.reset()
+}
+
+// ChangeDifficulty changes the AI difficulty level.
+func (g *Game) ChangeDifficulty(difficulty global.Difficulty) {
+	g.AIDifficulty = difficulty
 }
 
 // ToggleAI flips whether the AI plays for AIPlayer.
@@ -97,7 +102,7 @@ func (g *Game) play(i int, mark string) {
 }
 
 func (g *Game) playAIMove() {
-	i := ai.BestMove(g.Board, g.AIPlayer)
+	i := ai.BestMove(g.Board, g.AIPlayer, g.AIDifficulty)
 	if i == -1 {
 		return
 	}

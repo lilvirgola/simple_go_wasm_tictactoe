@@ -1,9 +1,26 @@
 package ai
 
-import "wasm_tictactoe/internal/board"
+import (
+	"math/rand"
+	"wasm_tictactoe/internal/board"
+	"wasm_tictactoe/internal/global"
+)
 
-// BestMove returns the index of the best move for `mark` on board `b` using minmax
-func BestMove(b board.Board, mark string) int {
+var (
+	coefficents = map[global.Difficulty]float64{
+		global.EasyDifficulty:   0.5,
+		global.MediumDifficulty: 0.75,
+		global.HardDifficulty:   1.0,
+	}
+)
+
+// BestMove returns the index of the best move for `mark` on board `b` using minmax or a random move based on the difficulty level
+func BestMove(b board.Board, mark string, difficulty global.Difficulty) int {
+	if rand.Float64() > coefficents[difficulty] {
+		moves := b.AvailableMoves()
+		return moves[rand.Intn(len(moves))]
+	}
+
 	_, move := minimax(b, mark, mark, 0)
 	return move
 }

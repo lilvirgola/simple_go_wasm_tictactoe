@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"syscall/js"
 
+	"wasm_tictactoe/internal/global"
 	"wasm_tictactoe/internal/state"
 )
 
@@ -27,6 +28,9 @@ func render(this js.Value, args []js.Value) any {
 	default:
 		status.Set("innerText", "Winner: "+game.Winner)
 	}
+
+	difficulty := document.Call("getElementById", "difficulty")
+	difficulty.Set("value", string(game.AIDifficulty))
 
 	aiToggle := document.Call("getElementById", "aiToggle")
 	aiToggle.Set("checked", game.AIEnabled)
@@ -62,7 +66,25 @@ func main() {
 	js.Global().Set("render", js.FuncOf(render))
 	js.Global().Set("reset", js.FuncOf(reset))
 	js.Global().Set("toggleAI", js.FuncOf(toggleAI))
+	js.Global().Set("changeDifficulty", js.FuncOf(changeDifficulty))
 
 	js.Global().Call("render")
 	<-c
+}
+
+func changeDifficulty(this js.Value, args []js.Value) any {
+	if len(args) == 0 {
+		return nil
+	}
+
+	switch args[0].String() {
+	case "easy":
+		game.ChangeDifficulty(global.EasyDifficulty)
+	case "medium":
+		game.ChangeDifficulty(global.MediumDifficulty)
+	case "hard":
+		game.ChangeDifficulty(global.HardDifficulty)
+	}
+
+	return nil
 }
